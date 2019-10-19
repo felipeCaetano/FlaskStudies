@@ -2,9 +2,10 @@ from flask import Flask, render_template, session, redirect, url_for
 from flask_wtf import Form
 from wtforms import StringField, SubmitField
 from wtforms.validators import Required
-from flask_script import Manager
+from flask_script import Manager, Shell
 from flask_sqlalchemy import SQLAlchemy
 from flask_bootstrap import Bootstrap
+from flask_migrate import Migrate, MigrateCommand
 
 import os
 
@@ -18,14 +19,23 @@ app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 bootstrap = Bootstrap(app)
 manager = Manager(app)
+
+
+def make_shell_context():
+    return dict(app=app, db=db, User=User, Role=Role)
+
+
+manager.add_command("shell", Shell(make_context=make_shell_context))
+manager.add_command('db', MigrateCommand)
 
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     form = NameForm()
-    if form.validadte_on_submit():
+    if form.validate_on_submit():
         user = User.query.filter_by(username=form.name.data).first()
         if user is not None:
             user = User(usarname=form.name.data)
